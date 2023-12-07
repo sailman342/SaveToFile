@@ -1,0 +1,69 @@
+﻿@page "/savetofile"
+
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime;
+
+@using System;
+@using System.Threading;
+@using System.Threading.Tasks;
+
+<center>
+    <h3>SaveToFilePage</h3>
+</center>
+
+<center>
+<textarea @bind="textToSave" name="Text1" cols="40" rows="5" placeholder="Type some text here to be saved to file"></textarea>
+</center>
+
+<br />
+<center>
+    <Button Color="ButtonColor.Primary" @onclick="SaveToDownloadFolder">Save to download folder</Button>
+</center>
+<br />
+<center>
+    <Button Color="ButtonColor.Primary" @onclick="SaveToUserSelectedFolder">Save to user selected folder</Button>
+</center>
+
+
+@code {
+
+    private string textToSave = "Hello world";
+    private string fileName = "test.txt";
+    private bool keepWainting = false;
+
+    private async void SaveToDownloadFolder()
+    {
+        // SaveFile will return before the file is written, as it is waiting for user action
+        await JSRuntime.InvokeAsync<object>("SaveToFile_SaveFileToDownloadFolder", fileName, textToSave);
+    }
+
+    private async void SaveToUserSelectedFolder()
+    {
+        // try a stupid waitin scheme !
+         keepWainting = true; 
+         
+         // SaveFile will return before the file is written, as it is waiting for user action
+         // Implement a callback to tell the user the job is done !
+        await JSRuntime.InvokeAsync<object>("SaveToFile_SaveFile", fileName, textToSave, DotNetObjectReference.Create(this), "asyncCallBack");
+
+        // keep your page , don't navigate or reload !!!!
+
+
+        while(keepWainting == true)
+        {
+            await Task.Delay(100);
+        }
+
+        Console.WriteLine("Get out now ");
+    }
+
+    [JSInvokable]
+    public async Task asyncCallBack()
+    {
+        // IF you whish you can navigate now !
+
+        keepWainting = false;
+        textToSave = "You did it !";
+        await InvokeAsync(StateHasChanged);
+    }
+}
